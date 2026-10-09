@@ -1,0 +1,5 @@
+ css/styles.css |  99 ++++++++++++++
+ index.html     |  12 ++
+ js/script.js   | 422 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ sw.js          |   2 +-
+ 4 files changed, 488 insertions(+), 47 deletions(-)

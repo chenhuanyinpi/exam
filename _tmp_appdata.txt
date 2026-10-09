@@ -1,0 +1,10 @@
+文件名、目录名或卷标语法不正确。
+agent-host-config.json
+agent-host-storage.json
+agent-host.db
+emptyWindowChatSessions
+state.vscdb
+state.vscdb.backup
+storage.json
+vscode.git
+data

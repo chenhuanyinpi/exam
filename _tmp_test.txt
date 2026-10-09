@@ -1,0 +1,286 @@
+TAP version 13
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已应用自定义考试"自定义：含休息的考试"的配置
+# 已更新为CET-4的配置
+# 已更新为CET-6的配置
+# 已更新为高考 · 语文的配置
+# 已更新为高考 · 数学的配置
+# 已更新为高考 · 物理的配置
+# 已更新为高考 · 历史的配置
+# 已更新为高考 · 外语的配置
+# 已更新为高考 · 化学的配置
+# 已更新为高考 · 地理的配置
+# 已更新为高考 · 思想政治的配置
+# 已更新为高考 · 生物学的配置
+# 已应用自定义考试"T1 回归：科目一 / 休息 / 科目二"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# 已应用自定义考试"自定义：环节提示测试"的配置
+# Subtest: 不计入环节在环节链中为零时长占位，位置等于其前置计入时长之和
+ok 1 - 不计入环节在环节链中为零时长占位，位置等于其前置计入时长之和
+  ---
+  duration_ms: 19.2771
+  type: 'test'
+  ...
+# Subtest: 考试结束环节 start === end === totalMinutes，且与标题区/总时间统计一致
+ok 2 - 考试结束环节 start === end === totalMinutes，且与标题区/总时间统计一致
+  ---
+  duration_ms: 2.0533
+  type: 'test'
+  ...
+# Subtest: 环节链所有环节满足 0 <= start <= end <= totalMinutes
+ok 3 - 环节链所有环节满足 0 <= start <= end <= totalMinutes
+  ---
+  duration_ms: 2.2877
+  type: 'test'
+  ...
+# Subtest: 任意跳转后 timeLeft 始终位于 [0, totalTime]，绝不出现负数倒计时
+ok 4 - 任意跳转后 timeLeft 始终位于 [0, totalTime]，绝不出现负数倒计时
+  ---
+  duration_ms: 2.8153
+  type: 'test'
+  ...
+# Subtest: nextSection 连续跳转不产生越界或负值
+ok 5 - nextSection 连续跳转不产生越界或负值
+  ---
+  duration_ms: 3.9738
+  type: 'test'
+  ...
+# Subtest: 自然运行到超时后 timeLeft 被钳制为 0（00:00:00）
+ok 6 - 自然运行到超时后 timeLeft 被钳制为 0（00:00:00）
+  ---
+  duration_ms: 2.4361
+  type: 'test'
+  ...
+# Subtest: 时间线保留占位环节并显示「休息（不计时）」，其它环节保持原格式
+ok 7 - 时间线保留占位环节并显示「休息（不计时）」，其它环节保持原格式
+  ---
+  duration_ms: 1.7819
+  type: 'test'
+  ...
+# Subtest: 旧数据缺少 countInTotal 字段时默认计入总时间
+ok 8 - 旧数据缺少 countInTotal 字段时默认计入总时间
+  ---
+  duration_ms: 2.9645
+  type: 'test'
+  ...
+# Subtest: applyCustomExamConfig 不修改传入的种子数据
+ok 9 - applyCustomExamConfig 不修改传入的种子数据
+  ---
+  duration_ms: 2.0927
+  type: 'test'
+  ...
+# Subtest: 官方预设（CET-4/CET-6/9 个高考）渲染逻辑不受影响
+ok 10 - 官方预设（CET-4/CET-6/9 个高考）渲染逻辑不受影响
+  ---
+  duration_ms: 4.841
+  type: 'test'
+  ...
+# Subtest: formatTime：0 秒 → 00:00:00，7325 秒 → 02:02:05
+ok 11 - formatTime：0 秒 → 00:00:00，7325 秒 → 02:02:05
+  ---
+  duration_ms: 1.5136
+  type: 'test'
+  ...
+# Subtest: formatTime：时/分/秒均补零并正确处理进位
+ok 12 - formatTime：时/分/秒均补零并正确处理进位
+  ---
+  duration_ms: 1.0777
+  type: 'test'
+  ...
+# Subtest: formatTime：负数输入保持既有实现行为（原样计算、不做钳制）
+ok 13 - formatTime：负数输入保持既有实现行为（原样计算、不做钳制）
+  ---
+  duration_ms: 1.3536
+  type: 'test'
+  ...
+# Subtest: calculateEndTime：09:00 + 120 分钟 → 11:00
+ok 14 - calculateEndTime：09:00 + 120 分钟 → 11:00
+  ---
+  duration_ms: 1.0348
+  type: 'test'
+  ...
+# Subtest: calculateEndTime：23:30 + 120 分钟 → 次日 01:30
+ok 15 - calculateEndTime：23:30 + 120 分钟 → 次日 01:30
+  ---
+  duration_ms: 1.072
+  type: 'test'
+  ...
+# Subtest: calculateEndTime：00:00 + 0 分钟 → 00:00
+ok 16 - calculateEndTime：00:00 + 0 分钟 → 00:00
+  ---
+  duration_ms: 1.1682
+  type: 'test'
+  ...
+# Subtest: calculateEndTime：跨日/不跨日/零时长的其它边界
+ok 17 - calculateEndTime：跨日/不跨日/零时长的其它边界
+  ---
+  duration_ms: 1.2807
+  type: 'test'
+  ...
+# Subtest: validateAndFormatTime：09:30 / 9:30 / 0930 均规范化为 09:30
+ok 18 - validateAndFormatTime：09:30 / 9:30 / 0930 均规范化为 09:30
+  ---
+  duration_ms: 1.7534
+  type: 'test'
+  ...
+# Subtest: validateAndFormatTime：25:00 / 24:00 / abc / 空字符串 / null 均返回 null
+ok 19 - validateAndFormatTime：25:00 / 24:00 / abc / 空字符串 / null 均返回 null
+  ---
+  duration_ms: 0.9032
+  type: 'test'
+  ...
+# Subtest: validateAndFormatTime：合法输入补零，其余越界/空白输入返回 null 且不抛错
+ok 20 - validateAndFormatTime：合法输入补零，其余越界/空白输入返回 null 且不抛错
+  ---
+  duration_ms: 1.8175
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections（T1）：科目一 90 + 休息 10（不计入）+ 科目二 30 → 总时长 120 分钟
+ok 21 - buildCustomExamSections（T1）：科目一 90 + 休息 10（不计入）+ 科目二 30 → 总时长 120 分钟
+  ---
+  duration_ms: 1.031
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections（T1）：逐环节校验 start / end / realTime
+ok 22 - buildCustomExamSections（T1）：逐环节校验 start / end / realTime
+  ---
+  duration_ms: 1.7184
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections（T1）：考试结束位置的起始时间等于 120 分钟
+ok 23 - buildCustomExamSections（T1）：考试结束位置的起始时间等于 120 分钟
+  ---
+  duration_ms: 1.3539
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections：纯函数，不修改传入的 fixture
+ok 24 - buildCustomExamSections：纯函数，不修改传入的 fixture
+  ---
+  duration_ms: 1.2977
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections：旧数据缺少 countInTotal 字段时默认计入总时间
+ok 25 - buildCustomExamSections：旧数据缺少 countInTotal 字段时默认计入总时间
+  ---
+  duration_ms: 1.4138
+  type: 'test'
+  ...
+# Subtest: buildCustomExamSections 防御性：全部 countInTotal=false 时不抛错且总时长为 0
+ok 26 - buildCustomExamSections 防御性：全部 countInTotal=false 时不抛错且总时长为 0
+  ---
+  duration_ms: 1.2723
+  type: 'test'
+  ...
+# Subtest: applyCustomExamConfig 复用纯函数：环节链与总时长一致（浏览器既有行为未变）
+ok 27 - applyCustomExamConfig 复用纯函数：环节链与总时长一致（浏览器既有行为未变）
+  ---
+  duration_ms: 1.8941
+  type: 'test'
+  ...
+# Subtest: 应用配置与开始考试都不提示（基线）
+ok 28 - 应用配置与开始考试都不提示（基线）
+  ---
+  duration_ms: 3.0184
+  type: 'test'
+  ...
+# Subtest: 倒计时自然跨入下一环节时播放提示音并显示视觉提示
+ok 29 - 倒计时自然跨入下一环节时播放提示音并显示视觉提示
+  ---
+  duration_ms: 2.8745
+  type: 'test'
+  ...
+# Subtest: 同一次切换只提示一次（重复刷新不再发声）
+ok 30 - 同一次切换只提示一次（重复刷新不再发声）
+  ---
+  duration_ms: 1.6556
+  type: 'test'
+  ...
+# Subtest: 点击「下一环节」时提示，随后的自然刷新不会重复提示
+ok 31 - 点击「下一环节」时提示，随后的自然刷新不会重复提示
+  ---
+  duration_ms: 2.6902
+  type: 'test'
+  ...
+# Subtest: 下拉框跳转触发提示（handleSectionChange）
+ok 32 - 下拉框跳转触发提示（handleSectionChange）
+  ---
+  duration_ms: 2.5084
+  type: 'test'
+  ...
+# Subtest: 下拉框跳到末尾「考试结束」同样提示
+ok 33 - 下拉框跳到末尾「考试结束」同样提示
+  ---
+  duration_ms: 2.0501
+  type: 'test'
+  ...
+# Subtest: 自然运行到考试结束（timeLeft 归零）提示一次
+ok 34 - 自然运行到考试结束（timeLeft 归零）提示一次
+  ---
+  duration_ms: 2.3677
+  type: 'test'
+  ...
+# Subtest: 关闭开关后不发声、不显示视觉提示，并清理已有提示
+ok 35 - 关闭开关后不发声、不显示视觉提示，并清理已有提示
+  ---
+  duration_ms: 2.2096
+  type: 'test'
+  ...
+# Subtest: 勾选开关时创建并恢复 AudioContext（用户手势）
+ok 36 - 勾选开关时创建并恢复 AudioContext（用户手势）
+  ---
+  duration_ms: 2.6953
+  type: 'test'
+  ...
+# Subtest: AudioContext 不可用或构造失败时静默降级，视觉提示仍生效
+ok 37 - AudioContext 不可用或构造失败时静默降级，视觉提示仍生效
+  ---
+  duration_ms: 4.6578
+  type: 'test'
+  ...
+# Subtest: 开关偏好持久化：自定义考试未携带该字段时保留已保存的偏好
+ok 38 - 开关偏好持久化：自定义考试未携带该字段时保留已保存的偏好
+  ---
+  duration_ms: 2.278
+  type: 'test'
+  ...
+# Subtest: 刷新后从 localStorage 恢复开关状态
+ok 39 - 刷新后从 localStorage 恢复开关状态
+  ---
+  duration_ms: 2.4525
+  type: 'test'
+  ...
+# Subtest: 页面标记与脚本联动：复选框 id 与 toggleDisplaySetting 参数一致
+ok 40 - 页面标记与脚本联动：复选框 id 与 toggleDisplaySetting 参数一致
+  ---
+  duration_ms: 3.0781
+  type: 'test'
+  ...
+1..40
+# tests 40
+# suites 0
+# pass 40
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 233.4172
+EXIT=0 

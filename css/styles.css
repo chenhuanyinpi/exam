@@ -2548,6 +2548,7 @@ h1 {
 .inline-setting-checkboxes {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: center;
   gap: 20px;
@@ -2809,6 +2810,104 @@ h1 {
 /* 预设市场按钮专属颜色 */
 .preset-market-btn {
   background: var(--color-sky) !important;
+}
+
+
+/* ==================== 环节切换提醒（视觉提示）==================== */
+/* 当前环节区域闪烁高亮，约 1.6 秒后自动恢复 */
+.current-section.section-change-flash {
+  animation: sectionChangeFlash 1.6s ease-out 1;
+}
+
+@keyframes sectionChangeFlash {
+  0%,
+  20% {
+    background: color-mix(
+      in srgb,
+      var(--color-warning) 45%,
+      var(--color-cream-dark)
+    );
+    border-color: var(--color-warning);
+    box-shadow:
+      0 0 0 6px color-mix(in srgb, var(--color-warning) 28%, transparent),
+      var(--shadow-md);
+    transform: scale(1.02);
+  }
+
+  60% {
+    background: color-mix(
+      in srgb,
+      var(--color-warning) 24%,
+      var(--color-cream-dark)
+    );
+    border-color: var(--color-warning);
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--color-warning) 12%, transparent),
+      var(--shadow-sm);
+    transform: scale(1);
+  }
+
+  /* 与 .current-section 的基础样式保持一致，动画结束后不会有视觉跳变 */
+  100% {
+    background: color-mix(in srgb, var(--color-lavender) 20%, transparent);
+    border-color: var(--color-lavender-dark);
+    box-shadow: none;
+    transform: scale(1);
+  }
+}
+
+/* 环节切换浮层提示（2 秒后自动消失） */
+.section-change-toast {
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: var(--color-text);
+  color: var(--color-cream);
+  padding: 10px 22px;
+  border-radius: var(--radius-full);
+  font-size: 14px;
+  font-family: var(--font-family);
+  z-index: 3000;
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  animation: sectionChangeToastFade 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes sectionChangeToastFade {
+  0% {
+    transform: translate(-50%, -15px);
+    opacity: 0;
+  }
+  12% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  85% {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -15px);
+    opacity: 0;
+  }
+}
+
+/* 尊重系统的"减少动态效果"偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .current-section.section-change-flash {
+    animation: none;
+    background: color-mix(
+      in srgb,
+      var(--color-warning) 35%,
+      var(--color-cream-dark)
+    );
+    border-color: var(--color-warning);
+  }
+
+  .section-change-toast {
+    animation: none;
+  }
 }
 
 .preset-market-btn:hover {

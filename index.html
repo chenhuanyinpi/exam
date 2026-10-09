@@ -273,6 +273,18 @@
               />
               <span>显示"本环节倒计时"</span>
             </label>
+            <label class="setting-checkbox-horizontal">
+              <input
+                type="checkbox"
+                id="inlineShowSectionAlert"
+                name="inlineShowSectionAlert"
+                checked
+                onchange="
+                  toggleDisplaySetting('showSectionAlert', this.checked)
+                "
+              />
+              <span>环节切换提示音</span>
+            </label>
           </div>
         </div>
       </div>

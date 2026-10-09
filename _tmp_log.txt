@@ -1,0 +1,5 @@
+21fc214 docs: refresh open source project information
+a649c08 feat: 实现官方预设市场与收藏功能，去除表情符号及卡片悬浮浮动效果
+31cecc5 style: 优化显示设置在小屏幕下的布局
+5e40122 feat: 添加高考官方预设及优化样式
+1704e23 chore: add SERVER.md to gitignore

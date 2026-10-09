@@ -1,0 +1,9 @@
+{
+  "name": "exam-clock",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Exam Clock 模拟考试时钟：零依赖离线自动化测试（Node.js 内置 node:test + node:assert）",
+  "scripts": {
+    "test": "node --test tests/index.js"
+  }
+}

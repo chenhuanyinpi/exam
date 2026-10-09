@@ -773,6 +773,9 @@ function updateTimer() {
       getRealTime(totalTime);
     document.querySelector(".countdown-value").textContent = "考试已结束";
     updateSectionList();
+
+    // 环节切换提醒：跨入最后的「考试结束」环节时同样只提示一次
+    notifySectionChange(examSections.length - 1);
     return;
   }
 
@@ -792,6 +795,8 @@ function updateTimer() {
   let currentSection = null;
   let nextSection = null;
   let nextSectionTime = 0;
+  // 当前实际命中的环节下标（用于环节切换提醒去重）
+  let matchedSectionIndex = -1;
 
   for (let i = 0; i < examSections.length; i++) {
     if (
@@ -800,6 +805,7 @@ function updateTimer() {
     ) {
       currentSection = examSections[i];
       currentSectionIndex = i;
+      matchedSectionIndex = i;
 
       // 找到下一环节
       if (i < examSections.length - 1) {
@@ -808,6 +814,11 @@ function updateTimer() {
       }
       break;
     }
+  }
+
+  // 环节切换提醒：运行中倒计时自然跨入新环节时提示，同一次切换只提示一次
+  if (currentSection && matchedSectionIndex >= 0) {
+    notifySectionChange(matchedSectionIndex);
   }
 
   // 更新当前环节显示
@@ -900,8 +911,14 @@ function updateSectionList() {
         break;
     }
 
+    // 不计入总时间的环节为零时长占位，标题固定显示为「休息（不计时）」
+    const sectionTitle =
+      section.countInTotal === false
+        ? "休息（不计时）"
+        : `${section.name} (${section.duration}min)`;
+
     sectionDiv.innerHTML = `
-                <div class="section-title">${section.name} (${section.duration}min)</div>
+                <div class="section-title">${sectionTitle}</div>
                 <div class="section-time">${section.description}</div>
                 <div class="section-real-time">考场时间: ${section.realTime}</div>
                 ${statusText}
@@ -922,6 +939,9 @@ function updateSectionList() {
 }
 
 function startExam() {
+  // 首次用户手势：创建 / 恢复 AudioContext，满足浏览器自动播放策略
+  unlockSectionAlertAudio();
+
   // 如果考试已经结束，先重置再开始
   if (timeLeft <= 0) {
     resetExam();
@@ -931,6 +951,8 @@ function startExam() {
   startTimeStamp = Date.now();
   elapsedBeforeLastStart = totalTime - timeLeft;
   timer = setInterval(updateTimer, 1000);
+  // 同步提醒基线，避免「开始考试」被误判为环节切换
+  syncSectionAlertBaseline();
   updateButtons();
   updateSectionList();
 }
@@ -955,6 +977,8 @@ function resetExam() {
   elapsedBeforeLastStart = 0;
   timeLeft = totalTime;
   currentSectionIndex = 0;
+  // 同步提醒基线，避免重置 / 切换配置被误判为环节切换
+  syncSectionAlertBaseline();
   document.getElementById("timer").textContent = formatTime(timeLeft);
   // 使用getRealTime函数获取正确的时间显示
   document.getElementById("currentTimeSpan").textContent = getRealTime(0);
@@ -1002,20 +1026,31 @@ function updateButtons() {
 }
 
 function handleSectionChange() {
+  // 下拉框切换属于用户手势，可据此创建 / 恢复 AudioContext
+  unlockSectionAlertAudio();
+
   const selectedValue = document.getElementById("sectionSelect").value;
   const targetTime = examSections[selectedValue].start * 60;
-  timeLeft = totalTime - targetTime;
+  // 下界钳制，确保任何跳转后 timeLeft 都落在 [0, totalTime] 内
+  timeLeft = Math.max(0, totalTime - targetTime);
   syncTimeOnManualChange();
   currentSectionIndex = parseInt(selectedValue);
   document.getElementById("currentTimeSpan").textContent =
     getRealTime(targetTime);
   updateSectionList();
+
+  // 环节切换提醒：下拉框选择跳转
+  notifySectionChange(getSectionIndexForTime(targetTime));
 }
 
 function skipToSelectedSection() {
+  // 下拉框跳转属于用户手势，可据此创建 / 恢复 AudioContext
+  unlockSectionAlertAudio();
+
   const selectedValue = document.getElementById("sectionSelect").value;
   const targetTime = examSections[selectedValue].start * 60;
-  timeLeft = totalTime - targetTime;
+  // 下界钳制，确保任何跳转后 timeLeft 都落在 [0, totalTime] 内
+  timeLeft = Math.max(0, totalTime - targetTime);
   syncTimeOnManualChange();
   currentSectionIndex = parseInt(selectedValue);
   document.getElementById("currentTimeSpan").textContent =
@@ -1031,10 +1066,16 @@ function skipToSelectedSection() {
     document.querySelector("#sectionTimer .time-value").textContent =
       formatTime(timeLeftInSection);
   }
+
+  // 环节切换提醒：下拉框选择跳转
+  notifySectionChange(getSectionIndexForTime(targetTime));
 }
 
 // 函数：跳转到下一个环节
 function nextSection() {
+  // 点击「下一环节」属于用户手势，可据此创建 / 恢复 AudioContext
+  unlockSectionAlertAudio();
+
   // 如果考试尚未开始，先启动考试
   if (!isRunning) {
     startExam();
@@ -1071,11 +1112,15 @@ function nextSection() {
   // 如果不是最后一个环节，则跳转到下一个环节
   const nextSectionIndex = currentSectionIndex + 1;
   const targetTime = examSections[nextSectionIndex].start * 60;
-  timeLeft = totalTime - targetTime;
+  // 下界钳制，确保任何跳转后 timeLeft 都落在 [0, totalTime] 内
+  timeLeft = Math.max(0, totalTime - targetTime);
   syncTimeOnManualChange();
   document.getElementById("currentTimeSpan").textContent =
     getRealTime(targetTime);
   document.getElementById("timer").textContent = formatTime(timeLeft);
+
+  // 环节切换提醒：点击「下一环节」按钮
+  notifySectionChange(getSectionIndexForTime(targetTime));
 
   // 更新本环节倒计时显示
   if (examSections[nextSectionIndex]) {
@@ -1152,11 +1197,12 @@ function updateSectionOptions() {
   select.innerHTML = "";
 
   examSections.forEach((section, index) => {
-    if (section.name === "考试结束") {
-      select.innerHTML += `<option value="${index}">${section.name} (${section.realTime})</option>`;
-    } else {
-      select.innerHTML += `<option value="${index}">${section.name} (${section.realTime})</option>`;
-    }
+    // 不计入总时间的环节为零时长占位，统一显示为「休息（不计时）」
+    const label =
+      section.countInTotal === false
+        ? "休息（不计时）"
+        : `${section.name} (${section.realTime})`;
+    select.innerHTML += `<option value="${index}">${label}</option>`;
   });
 }
 
@@ -1299,76 +1345,98 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-// 应用自定义考试配置
-function applyCustomExamConfig(customExam) {
-  // 构造考试配置
-  const customSections = [];
-  let currentTime = 0;
+// 将自定义考试的环节定义转换为内部环节链（纯函数）。
+// 仅依据传入配置计算，不读写全局变量、不访问 DOM，返回 { sections, totalMinutes }。
+// - 只累计「计入总时间」的环节时长，作为所有环节的定位基准
+// - 不计入总时间的环节按零时长占位处理（start === end），
+//   位置等于其之前所有计入环节时长之和
+// - 末尾追加「考试结束」环节（start === end === totalMinutes）
+function buildCustomExamSections(customExam) {
+  const sections = [];
 
-  customExam.sections.forEach((section, index) => {
-    const start = currentTime;
-    const duration = section.duration;
+  // 考试开始时间（小时/分钟）
+  const [hours, minutes] = customExam.startTime.split(":").map(Number);
+
+  // 累计分钟数 → 考场时间字符串（HH:MM）
+  const toRealTime = (minutesFromStart) => {
+    const time = new Date(2000, 0, 1, hours, minutes);
+    time.setMinutes(time.getMinutes() + minutesFromStart);
+    return `${time.getHours().toString().padStart(2, "0")}:${time
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  };
+
+  // 仅累计「计入总时间」的环节时长，作为所有环节的定位基准
+  let elapsedMinutes = 0;
+
+  customExam.sections.forEach((section) => {
+    // 兼容旧数据：未显式标记时默认计入总时间
+    const countInTotal = section.countInTotal !== false;
+    // 不计入总时间的环节按零时长占位处理（start === end），
+    // 位置等于其之前所有计入环节时长之和
+    const duration = countInTotal ? Number(section.duration) || 0 : 0;
+    const start = elapsedMinutes;
     const end = start + duration;
 
-    // 构造时间段字符串
-    const [startHours, startMinutes] = customExam.startTime
-      .split(":")
-      .map(Number);
-    const realStartTime = new Date(2000, 0, 1, startHours, startMinutes);
-    realStartTime.setMinutes(realStartTime.getMinutes() + start);
-
-    const realEndTime = new Date(2000, 0, 1, startHours, startMinutes);
-    realEndTime.setMinutes(realEndTime.getMinutes() + end);
-
-    const realTime =
-      `${realStartTime.getHours().toString().padStart(2, "0")}:${realStartTime.getMinutes().toString().padStart(2, "0")}-` +
-      `${realEndTime.getHours().toString().padStart(2, "0")}:${realEndTime.getMinutes().toString().padStart(2, "0")}`;
-
-    customSections.push({
+    sections.push({
       name: section.name,
       start: start,
       duration: duration,
       end: end,
       description: section.description,
-      realTime: realTime,
+      realTime: `${toRealTime(start)}-${toRealTime(end)}`,
+      countInTotal: countInTotal,
     });
 
-    currentTime = end;
+    elapsedMinutes = end;
   });
 
-  // 添加考试结束环节
-  if (customSections.length > 0) {
-    const lastSection = customSections[customSections.length - 1];
-    customSections.push({
+  // 计入总时间的环节时长之和即为考试总时长
+  const totalMinutes = elapsedMinutes;
+
+  // 添加考试结束环节：start === end === totalMinutes
+  if (sections.length > 0) {
+    sections.push({
       name: "考试结束",
-      start: lastSection.end,
+      start: totalMinutes,
       duration: 0,
-      end: lastSection.end,
+      end: totalMinutes,
       description: "考试结束",
-      realTime: lastSection.realTime.split("-")[1],
+      realTime: toRealTime(totalMinutes),
     });
   }
+
+  return { sections: sections, totalMinutes: totalMinutes };
+}
+
+// 应用自定义考试配置
+function applyCustomExamConfig(customExam) {
+  // 构造考试配置（环节链与总时长由纯函数换算，便于自动化测试）
+  const { sections: customSections, totalMinutes } =
+    buildCustomExamSections(customExam);
+
+  // 考试开始时间（小时/分钟）
+  const [hours, minutes] = customExam.startTime.split(":").map(Number);
 
   // 更新全局变量
   currentExamType = "custom";
   examSections = customSections;
-  totalTime = customExam.totalMinutes * 60;
+  totalTime = totalMinutes * 60;
   timeLeft = totalTime;
 
   // 设置考试开始时间
-  const [hours, minutes] = customExam.startTime.split(":").map(Number);
   examStartTime = new Date();
   examStartTime.setHours(hours, minutes, 0, 0);
 
-  // 更新UI
+  // 更新UI（标题区、总时间统计与环节链末端保持同一 totalMinutes）
   document.getElementById("examType").textContent = customExam.name;
   document.getElementById("examTitle").textContent = customExam.name;
   document.getElementById("examDate").textContent = formatDate(customExam.date);
   document.getElementById("examTimeRange").textContent =
-    `${customExam.startTime} - ${calculateEndTime(customExam.startTime, customExam.totalMinutes)}`;
-  document.getElementById("totalTime").textContent = customExam.totalMinutes;
-  document.getElementById("remainingTime").textContent =
-    customExam.totalMinutes;
+    `${customExam.startTime} - ${calculateEndTime(customExam.startTime, totalMinutes)}`;
+  document.getElementById("totalTime").textContent = totalMinutes;
+  document.getElementById("remainingTime").textContent = totalMinutes;
   document.getElementById("timer").textContent = formatTime(timeLeft);
   document.getElementById("currentTimeSpan").textContent =
     `${customExam.startTime}:00`;
@@ -1435,6 +1503,25 @@ function calculateEndTime(startTime, durationMinutes) {
 let showCurrentTime = true;
 let showCountdownTimer = true;
 let showSectionTimer = true;
+// 环节切换提醒（提示音 + 视觉提示）开关
+let showSectionAlert = true;
+
+// 读取已持久化的单项显示设置
+// 自定义考试配置未携带该字段时，用它保留用户在首页保存的偏好
+function getPersistedDisplaySetting(settingName, defaultValue) {
+  try {
+    const savedSettings = localStorage.getItem("displaySettings");
+    if (!savedSettings) return defaultValue;
+
+    const settings = JSON.parse(savedSettings);
+    if (settings && settings[settingName] !== undefined) {
+      return settings[settingName];
+    }
+  } catch (e) {
+    console.error("解析显示设置失败，使用当前值", e);
+  }
+  return defaultValue;
+}
 
 // 初始化显示设置
 function initializeDisplaySettings() {
@@ -1455,17 +1542,23 @@ function initializeDisplaySettings() {
         settings.showSectionTimer !== undefined
           ? settings.showSectionTimer
           : true;
+      showSectionAlert =
+        settings.showSectionAlert !== undefined
+          ? settings.showSectionAlert
+          : true;
     } catch (e) {
       console.error("解析显示设置失败，恢复默认值", e);
       showCurrentTime = true;
       showCountdownTimer = true;
       showSectionTimer = true;
+      showSectionAlert = true;
     }
   } else {
     // 默认设置
     showCurrentTime = true;
     showCountdownTimer = true;
     showSectionTimer = true;
+    showSectionAlert = true;
   }
 
   // 更新UI和复选框状态
@@ -1487,12 +1580,18 @@ function applyDisplaySettings(displaySettings) {
     displaySettings.showSectionTimer !== undefined
       ? displaySettings.showSectionTimer
       : true;
+  // 环节切换提醒是全局偏好：自定义考试未携带该字段时沿用已保存的设置
+  showSectionAlert =
+    displaySettings.showSectionAlert !== undefined
+      ? displaySettings.showSectionAlert
+      : getPersistedDisplaySetting("showSectionAlert", showSectionAlert);
 
   // 保存设置到localStorage
   const settings = {
     showCurrentTime,
     showCountdownTimer,
     showSectionTimer,
+    showSectionAlert,
   };
   localStorage.setItem("displaySettings", JSON.stringify(settings));
 
@@ -1513,6 +1612,16 @@ function toggleDisplaySetting(settingName, value) {
     case "showSectionTimer":
       showSectionTimer = value;
       break;
+    case "showSectionAlert":
+      showSectionAlert = value;
+      // 勾选开关本身就是用户手势，可借此创建 / 恢复 AudioContext
+      if (showSectionAlert) {
+        unlockSectionAlertAudio();
+      } else {
+        // 关闭提醒时清理可能仍在显示的视觉提示
+        clearSectionChangeVisuals();
+      }
+      break;
   }
 
   // 保存设置到localStorage
@@ -1520,6 +1629,7 @@ function toggleDisplaySetting(settingName, value) {
     showCurrentTime,
     showCountdownTimer,
     showSectionTimer,
+    showSectionAlert,
   };
   localStorage.setItem("displaySettings", JSON.stringify(settings));
 
@@ -1548,6 +1658,7 @@ function resetDisplaySettings() {
     showCurrentTime: true,
     showCountdownTimer: true,
     showSectionTimer: true,
+    showSectionAlert: true,
   });
 }
 
@@ -1561,11 +1672,15 @@ function updateDisplaySettings() {
   const sectionTimerCheckbox = document.getElementById(
     "inlineShowSectionTimer",
   );
+  const sectionAlertCheckbox = document.getElementById(
+    "inlineShowSectionAlert",
+  );
 
   if (currentTimeCheckbox) currentTimeCheckbox.checked = showCurrentTime;
   if (countdownTimerCheckbox)
     countdownTimerCheckbox.checked = showCountdownTimer;
   if (sectionTimerCheckbox) sectionTimerCheckbox.checked = showSectionTimer;
+  if (sectionAlertCheckbox) sectionAlertCheckbox.checked = showSectionAlert;
 
   // 控制元素显示/隐藏
   const currentTimeSpan = document.getElementById("currentTimeSpan");
@@ -1607,6 +1722,221 @@ function updateDisplaySettings() {
       timeValue.style.display = "";
     }
   }
+}
+
+// ==================== 环节切换提醒（提示音 + 视觉提示）====================
+// 提示音使用 Web Audio API 实时合成（OscillatorNode + GainNode 包络），
+// 不依赖任何外部音频文件或 CDN，因此离线也能正常发声。
+
+// 提示音由两个短音符组成，总时长约 260ms
+const SECTION_ALERT_NOTES = [
+  { frequency: 880, offset: 0, duration: 0.12 },
+  { frequency: 1318.51, offset: 0.12, duration: 0.14 },
+];
+// 当前环节闪烁高亮时长
+const SECTION_ALERT_FLASH_DURATION = 1600;
+// 浮层提示显示时长
+const SECTION_ALERT_TOAST_DURATION = 2000;
+
+// AudioContext 仅在用户手势中创建 / 恢复，以符合浏览器自动播放策略
+let sectionAlertAudioContext = null;
+// 上一次已提示过的环节下标，保证同一次切换只提示一次
+let lastNotifiedSectionIndex = -1;
+// 视觉提示相关定时器与节点引用
+let sectionFlashTimer = null;
+let sectionToastTimer = null;
+let sectionToastElement = null;
+
+// 获取 AudioContext 构造函数（兼容 webkit 前缀，不支持的浏览器返回 null）
+function getAudioContextConstructor() {
+  if (typeof window === "undefined") return null;
+  return window.AudioContext || window.webkitAudioContext || null;
+}
+
+// 在用户手势回调中调用：创建 / 恢复 AudioContext，失败时静默降级
+function unlockSectionAlertAudio() {
+  const AudioContextConstructor = getAudioContextConstructor();
+  if (!AudioContextConstructor) return;
+
+  try {
+    if (!sectionAlertAudioContext) {
+      sectionAlertAudioContext = new AudioContextConstructor();
+    }
+
+    if (
+      sectionAlertAudioContext.state === "suspended" &&
+      typeof sectionAlertAudioContext.resume === "function"
+    ) {
+      const resumeResult = sectionAlertAudioContext.resume();
+      // resume() 返回 Promise，捕获异常避免未处理的拒绝
+      if (resumeResult && typeof resumeResult.catch === "function") {
+        resumeResult.catch(function () {});
+      }
+    }
+  } catch (error) {
+    // 浏览器不支持或用户禁用音频时保持静默，不影响考试计时
+    sectionAlertAudioContext = null;
+  }
+}
+
+// 合成并播放一段短提示音
+function playSectionChangeSound() {
+  const audioContext = sectionAlertAudioContext;
+  // 未获得用户手势授权时（context 不存在或仍为 suspended）不尝试播放
+  if (!audioContext || audioContext.state !== "running") return;
+
+  try {
+    const startTime = audioContext.currentTime;
+    const lastNote = SECTION_ALERT_NOTES[SECTION_ALERT_NOTES.length - 1];
+
+    // 总音量包络：快速起音后平滑衰减，避免结尾出现爆音
+    const masterGain = audioContext.createGain();
+    masterGain.gain.setValueAtTime(0.0001, startTime);
+    masterGain.gain.exponentialRampToValueAtTime(0.5, startTime + 0.02);
+    masterGain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      startTime + lastNote.offset + lastNote.duration,
+    );
+    masterGain.connect(audioContext.destination);
+
+    SECTION_ALERT_NOTES.forEach(function (note) {
+      const noteStart = startTime + note.offset;
+      const noteEnd = noteStart + note.duration;
+
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(note.frequency, noteStart);
+
+      // 每个音符单独做一次包络，形成清脆的"叮咚"两声
+      const noteGain = audioContext.createGain();
+      noteGain.gain.setValueAtTime(0.0001, noteStart);
+      noteGain.gain.exponentialRampToValueAtTime(0.9, noteStart + 0.015);
+      noteGain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
+
+      oscillator.connect(noteGain);
+      noteGain.connect(masterGain);
+      oscillator.start(noteStart);
+      oscillator.stop(noteEnd + 0.02);
+    });
+  } catch (error) {
+    // 合成失败时不影响考试主流程
+  }
+}
+
+// 视觉提示一：当前环节区域闪烁高亮约 1.6 秒
+function flashCurrentSection() {
+  if (typeof document === "undefined") return;
+
+  const currentSectionElement = document.getElementById("currentSection");
+  if (!currentSectionElement || !currentSectionElement.classList) return;
+
+  currentSectionElement.classList.remove("section-change-flash");
+  // 读取布局属性强制重排，保证连续切换时 CSS 动画可以重新播放
+  void currentSectionElement.offsetWidth;
+  currentSectionElement.classList.add("section-change-flash");
+
+  if (sectionFlashTimer) clearTimeout(sectionFlashTimer);
+  sectionFlashTimer = setTimeout(function () {
+    currentSectionElement.classList.remove("section-change-flash");
+    sectionFlashTimer = null;
+  }, SECTION_ALERT_FLASH_DURATION);
+}
+
+// 视觉提示二：2 秒后自动消失的浮层提示（不打断考试，不接收点击）
+function showSectionChangeToast(section) {
+  if (typeof document === "undefined" || !document.body) return;
+
+  const sectionName = section && section.name ? section.name : "新环节";
+
+  // 上一枚提示尚未消失时先移除，避免叠加
+  if (sectionToastElement && typeof sectionToastElement.remove === "function") {
+    sectionToastElement.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "section-change-toast";
+  toast.setAttribute("role", "status");
+  toast.textContent = `环节切换：${sectionName}`;
+  document.body.appendChild(toast);
+  sectionToastElement = toast;
+
+  if (sectionToastTimer) clearTimeout(sectionToastTimer);
+  sectionToastTimer = setTimeout(function () {
+    if (typeof toast.remove === "function") toast.remove();
+    if (sectionToastElement === toast) sectionToastElement = null;
+    sectionToastTimer = null;
+  }, SECTION_ALERT_TOAST_DURATION);
+}
+
+// 清理可能仍在显示的视觉提示（关闭开关时调用）
+function clearSectionChangeVisuals() {
+  if (sectionFlashTimer) {
+    clearTimeout(sectionFlashTimer);
+    sectionFlashTimer = null;
+  }
+
+  if (typeof document !== "undefined") {
+    const currentSectionElement = document.getElementById("currentSection");
+    if (currentSectionElement && currentSectionElement.classList) {
+      currentSectionElement.classList.remove("section-change-flash");
+    }
+  }
+
+  if (sectionToastTimer) {
+    clearTimeout(sectionToastTimer);
+    sectionToastTimer = null;
+  }
+
+  if (sectionToastElement && typeof sectionToastElement.remove === "function") {
+    sectionToastElement.remove();
+  }
+  sectionToastElement = null;
+}
+
+// 按已消耗时间查找实际生效的环节下标（与 updateTimer 的判定逻辑保持一致）
+function getSectionIndexForTime(elapsedSeconds) {
+  for (let i = 0; i < examSections.length; i++) {
+    if (
+      elapsedSeconds >= examSections[i].start * 60 &&
+      elapsedSeconds < examSections[i].end * 60
+    ) {
+      return i;
+    }
+  }
+
+  // 落在所有环节区间之外（零时长占位环节、考试结束时刻等），
+  // 退化为最后一个已开始的环节
+  let fallbackIndex = -1;
+  for (let i = 0; i < examSections.length; i++) {
+    if (examSections[i].start * 60 <= elapsedSeconds) {
+      fallbackIndex = i;
+    }
+  }
+  return fallbackIndex;
+}
+
+// 同步提醒基线：把当前环节标记为"已提示"
+// 用于开始考试 / 重置考试 / 切换考试配置后，避免把首次渲染误判为环节切换
+function syncSectionAlertBaseline() {
+  lastNotifiedSectionIndex = getSectionIndexForTime(totalTime - timeLeft);
+}
+
+// 环节切换提醒统一入口：
+// - 以环节下标去重，确保同一次切换（自然跨入与手动跳转叠加）只提示一次
+// - 开关关闭时不发声，也不显示视觉提示
+// - 考试结束时刻同样会提示最后一次
+function notifySectionChange(sectionIndex) {
+  const section = examSections[sectionIndex];
+  if (!section) return;
+  if (sectionIndex === lastNotifiedSectionIndex) return;
+
+  lastNotifiedSectionIndex = sectionIndex;
+
+  if (!showSectionAlert) return;
+
+  playSectionChangeSound();
+  flashCurrentSection();
+  showSectionChangeToast(section);
 }
 
 // 在DOM加载完成后初始化显示设置
